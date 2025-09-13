@@ -157,6 +157,7 @@ def printer_ping(request):
     printer_id = payload.get("printer_id")
     name = payload.get("name") or "printer"
     status = payload.get("status") or "idle"
+    progress = payload.get("progress")
 
     from .models import Printer  # local import to avoid circular issues in some tools
 
@@ -179,7 +180,8 @@ def printer_ping(request):
         try:
             o = printer.current_order
             o.status = "printing"
-            o.save(update_fields=["status", "updated_at"])
+            o.progress = progress
+            o.save(update_fields=["status", "progress", "updated_at"])
         except Order.DoesNotExist:
             pass
 
@@ -200,6 +202,7 @@ def printer_ping(request):
                     update_fields=[
                         "status",
                         "assigned_printer_id",
+                        "progress",
                         "updated_at",
                     ]
                 )
