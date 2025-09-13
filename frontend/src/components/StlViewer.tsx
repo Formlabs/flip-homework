@@ -7,11 +7,12 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 type Props = {
   url: string;
+  color?: string;
   className?: string;
   height?: number;
 };
 
-export default function StlViewer({ url, className, height = 360 }: Props) {
+export default function StlViewer({ url, className = "gray", color = "gray", height = 360 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
@@ -45,7 +46,7 @@ export default function StlViewer({ url, className, height = 360 }: Props) {
       (geometry: THREE.BufferGeometry) => {
         geometry.computeBoundingBox();
         geometry.computeVertexNormals();
-        const material = new THREE.MeshPhongMaterial();
+        const material = new THREE.MeshPhongMaterial({ color });
         mesh = new THREE.Mesh(geometry, material);
 
         // Center & scale to fit view
@@ -59,6 +60,7 @@ export default function StlViewer({ url, className, height = 360 }: Props) {
         const center = new THREE.Vector3();
         box.getCenter(center).multiplyScalar(scale);
         mesh.position.sub(center);
+
 
         scene.add(mesh);
         controls.update();
@@ -96,7 +98,7 @@ export default function StlViewer({ url, className, height = 360 }: Props) {
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
-  }, [url, height]);
+  }, [url, height, color]);
 
   return <div ref={containerRef} className={className} style={{ height }} />;
 }

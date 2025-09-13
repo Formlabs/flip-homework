@@ -52,7 +52,7 @@ export default async function PrintablePreview({
           </h1>
           {p.stl_url ? (
             <div className="mt-4 rounded overflow-hidden">
-              <StlViewer url={p.stl_url} height={420} />
+              <StlViewer url={p.stl_url} height={420} color={p.color} />
             </div>
           ) : null}
           <div className="mt-5 flex items-center justify-between">
