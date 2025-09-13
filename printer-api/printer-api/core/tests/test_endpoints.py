@@ -206,3 +206,17 @@ class ApiEndpointsTests(TestCase):
             "/api/printers/ping", data="{bad}", content_type="application/json"
         )
         self.assertEqual(resp.status_code, 400)
+
+
+    def test_order_progress_returns_progress_and_timestamp(self):
+        progress = 50
+        printable = self._make_printable()
+        order = Order.objects.create(
+            status="printing", items=[{"printable_id": printable.id, "qty": 1}], progress=progress
+        )
+
+        response = self.client.get(f"/api/orders/{order.id}/progress")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"progress": progress, "timestamp": order.updated_at.isoformat()})
+        

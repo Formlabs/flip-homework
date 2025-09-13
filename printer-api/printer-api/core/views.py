@@ -67,6 +67,16 @@ def printable_stl(request, printable_id: int):
     )
 
 
+def order_progress(request, order_id: int):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    try:
+        o = Order.objects.get(pk=order_id)
+        return JsonResponse({"progress": o.progress, "timestamp": o.updated_at.isoformat()})
+    except Order.DoesNotExist:
+        return JsonResponse({"error": {"code": "NOT_FOUND"}}, status=404)
+
+
 @csrf_exempt
 def create_order(request):
     if request.method != "POST":
@@ -113,7 +123,7 @@ def create_order(request):
             )
         cleaned.append({"printable_id": pid, "qty": qty})
 
-    order = Order.objects.create(status="queued", items=cleaned)
+    order = Order.objects.create(status="queued", items=cleaned, progress=0)
     return JsonResponse({"order_id": order.id, "status": order.status}, status=201)
 
 
@@ -241,7 +251,8 @@ def job_complete(request, job_id: int):
 
     # Mark order complete
     order.status = "complete"
-    order.save(update_fields=["status", "updated_at"])
+    order.progress = 100
+    order.save(update_fields=["status", "progress", "updated_at"])
 
     from .models import Printer  # local import as above
 
