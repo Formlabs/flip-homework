@@ -12,7 +12,12 @@ type Props = {
   height?: number;
 };
 
-export default function StlViewer({ url, className = "gray", color = "gray", height = 360 }: Props) {
+export default function StlViewer({
+  url,
+  className,
+  color = "gray",
+  height = 360,
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
@@ -40,6 +45,7 @@ export default function StlViewer({ url, className = "gray", color = "gray", hei
     scene.add(dir);
 
     let mesh: THREE.Mesh | null = null;
+    let plane: THREE.GridHelper | undefined;
     const loader = new STLLoader();
     loader.load(
       url,
@@ -50,19 +56,17 @@ export default function StlViewer({ url, className = "gray", color = "gray", hei
         mesh = new THREE.Mesh(geometry, material);
 
         // Center & scale to fit view
-        const box = geometry.boundingBox!;
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z) || 1;
-        const scale = 1 / maxDim;
+        const boundingBoxSize = getBoundingBoxSize(geometry);
+        const scale = getScale(boundingBoxSize);
         mesh.scale.setScalar(scale);
 
         const center = new THREE.Vector3();
-        box.getCenter(center).multiplyScalar(scale);
+        geometry.boundingBox!.getCenter(center).multiplyScalar(scale);
         mesh.position.sub(center);
 
-
         scene.add(mesh);
+        plane = getPlane(boundingBoxSize, scale);
+        scene.add(plane);
         controls.update();
         animate();
       },
@@ -94,6 +98,7 @@ export default function StlViewer({ url, className = "gray", color = "gray", hei
       if (mesh) {
         mesh.geometry.dispose();
         (mesh.material as THREE.Material).dispose();
+        plane!.dispose();
       }
       renderer.dispose();
       container.removeChild(renderer.domElement);
@@ -101,4 +106,22 @@ export default function StlViewer({ url, className = "gray", color = "gray", hei
   }, [url, height, color]);
 
   return <div ref={containerRef} className={className} style={{ height }} />;
+}
+
+function getBoundingBoxSize(geometry: THREE.BufferGeometry): THREE.Vector3 {
+  const box = geometry.boundingBox!;
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  return size;
+}
+
+function getScale(size: THREE.Vector3): number {
+  const maxDim = Math.max(size.x, size.y, size.z) || 1;
+  return 1 / maxDim;
+}
+
+function getPlane(size: THREE.Vector3, scale: number): THREE.GridHelper {
+  const gridHelper = new THREE.GridHelper();
+  gridHelper.position.y = -(size.y * 0.5 * scale);
+  return gridHelper;
 }
