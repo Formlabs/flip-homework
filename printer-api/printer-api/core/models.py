@@ -20,6 +20,7 @@ class Order(models.Model):
         ("failed", "Failed"),
     ]
 
+    progress = models.FloatField(default=0)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="unknown")
     items = models.JSONField(default=list, blank=True)
     assigned_printer_id = models.IntegerField(null=True, blank=True)
