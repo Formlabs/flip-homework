@@ -4,6 +4,10 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import {
+  CSS2DObject,
+  CSS2DRenderer,
+} from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 type Props = {
   url: string;
@@ -20,15 +24,21 @@ export default function StlViewer({
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const labelRendererRef = useRef<CSS2DRenderer | null>(null);
 
   useEffect(() => {
     const container = containerRef.current!;
     const scene = new THREE.Scene();
+    const labelScene = new THREE.Scene();
     scene.background = new THREE.Color(0xf5f5f5);
 
     const width = container.clientWidth || 600;
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(2, 2, 2);
+
+    const labelRenderer = getLabelRenderer(width, height);
+    labelRendererRef.current = labelRenderer;
+    container.appendChild(labelRenderer.domElement);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
@@ -64,6 +74,8 @@ export default function StlViewer({
         geometry.boundingBox!.getCenter(center).multiplyScalar(scale);
         mesh.position.sub(center);
 
+        labelScene.add(getLabel(boundingBoxSize));
+
         scene.add(mesh);
         plane = getPlane(boundingBoxSize, scale);
         scene.add(plane);
@@ -81,6 +93,7 @@ export default function StlViewer({
       raf = requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
+      labelRenderer.render(labelScene, camera);
     };
 
     const onResize = () => {
@@ -102,6 +115,7 @@ export default function StlViewer({
       }
       renderer.dispose();
       container.removeChild(renderer.domElement);
+      container.removeChild(labelRenderer.domElement);
     };
   }, [url, height, color]);
 
@@ -124,4 +138,20 @@ function getPlane(size: THREE.Vector3, scale: number): THREE.GridHelper {
   const gridHelper = new THREE.GridHelper();
   gridHelper.position.y = -(size.y * 0.5 * scale);
   return gridHelper;
+}
+
+function getLabel(size: THREE.Vector3): CSS2DObject {
+  const labelDiv = document.createElement("div");
+  labelDiv.textContent = `${size.x}mm x ${size.y}mm x ${size.z}mm`;
+  labelDiv.style.backgroundColor = "transparent";
+  return new CSS2DObject(labelDiv);
+}
+
+function getLabelRenderer(width: number, height: number): CSS2DRenderer {
+  const labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(width, height);
+  labelRenderer.domElement.style.position = "absolute";
+  labelRenderer.domElement.style.top = "0px";
+  labelRenderer.domElement.style.pointerEvents = "none";
+  return labelRenderer;
 }
