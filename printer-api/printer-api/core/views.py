@@ -1,7 +1,7 @@
 import json
 from django.http import JsonResponse, HttpResponseNotAllowed, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
-from .models import Printable, Order
+from .models import Printable, Order, Push  
 from django.utils import timezone
 from django.db import transaction
 
@@ -65,6 +65,24 @@ def printable_stl(request, printable_id: int):
     return FileResponse(
         p.stl.open("rb"), as_attachment=True, filename=p.stl.name.split("/", 1)[-1]
     )
+
+def push_subscription(request):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    try:
+        payload = json.loads(request.body or b"{}")
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": {"code": "BAD_REQUEST", "message": "Invalid JSON"}}, status=400
+        )
+    if "subscription" not in payload:
+        return JsonResponse(
+            {"error": {"code": "BAD_REQUEST", "message": "subscription required"}}, status=400
+        )
+
+    Push.objects.create(subscription=payload["subscription"])
+    
+    return JsonResponse(data={}, status=200)
 
 
 def order_progress(request, order_id: int):

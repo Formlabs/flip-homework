@@ -10,4 +10,5 @@ urlpatterns = [
     path("orders/<int:order_id>/progress", views.order_progress, name="order_progress"),
     path("printers/ping", views.printer_ping, name="printer_ping"),
     path("jobs/<int:job_id>/complete", views.job_complete, name="job_complete"),
+    path("push/subcsription", views.push_subscription, name="push_subscription"),
 ]
