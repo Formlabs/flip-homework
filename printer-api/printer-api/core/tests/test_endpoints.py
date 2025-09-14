@@ -1,6 +1,6 @@
 from django.test import TestCase, Client, override_settings
 from django.core.files.base import ContentFile
-from core.models import Printable, Order, Printer
+from core.models import Printable, Order, Printer, Push
 from tempfile import TemporaryDirectory
 import json
 
@@ -220,3 +220,11 @@ class ApiEndpointsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"progress": progress, "timestamp": order.updated_at.isoformat()})
         
+
+    def test_push_subscription(self):
+        response = self.client.post(
+            "/api/push/subcsription", data=json.dumps({"subscription": {"endpoint": "test"}}), content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Push.objects.count(), 1)
+        self.assertEqual(Push.objects.first().subscription, {"endpoint": "test"})

@@ -45,3 +45,11 @@ class Printer(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - admin display
         return f"Printer {self.pk} - {self.name}"
+
+class Push(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    subscription = models.JSONField(default=dict, blank=True)
+
+    def __str__(self) -> str:  # pragma: no cover - admin display
+        return f"Push {self.pk} - {self.created_at}"
