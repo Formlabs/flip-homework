@@ -13,7 +13,7 @@ export default function OrderContainer({ order }: { order: Order }) {
 
   function isComplete(freshOrderState: Order) {
     return (
-      freshOrderState.order.status === "complete" &&
+      ["complete", "failed"].includes(freshOrderState.order.status) &&
       Math.floor(freshOrderState.progress.progress) >= 100
     );
   }
