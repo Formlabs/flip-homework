@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Printable, Order, Push  
 from django.utils import timezone
 from django.db import transaction
+from .libs.send_notifications import send_notifications
 
 
 def not_implemented(message: str):
@@ -66,6 +67,7 @@ def printable_stl(request, printable_id: int):
         p.stl.open("rb"), as_attachment=True, filename=p.stl.name.split("/", 1)[-1]
     )
 
+@csrf_exempt
 def push_subscription(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -285,5 +287,10 @@ def job_complete(request, job_id: int):
             pr.save(update_fields=["current_order", "status", "last_ping_at"])
     except (Printer.DoesNotExist, ValueError):
         pass
+
+    try:
+        send_notifications(order)
+    except Exception as e:
+        print(e)
 
     return JsonResponse({"ok": True})
