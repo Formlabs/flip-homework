@@ -223,7 +223,7 @@ class ApiEndpointsTests(TestCase):
 
     def test_push_subscription(self):
         response = self.client.post(
-            "/api/push/subcsription", data=json.dumps({"subscription": {"endpoint": "test"}}), content_type="application/json"
+            "/api/push/subscription", data=json.dumps({"subscription": {"endpoint": "test"}}), content_type="application/json"
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Push.objects.count(), 1)

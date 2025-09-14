@@ -4,6 +4,7 @@ import { getOrder, type Order } from "@/libs/get-order";
 import OrderProgress from "./OrderProgress";
 import OrderStatus from "./OrderStatus";
 import { useEffect, useState, useRef } from "react";
+import PushSubscription from "../push/PushSubscription";
 
 export default function OrderContainer({ order }: { order: Order }) {
   const [orderState, setOrderState] = useState<Order>(order);
@@ -49,6 +50,7 @@ export default function OrderContainer({ order }: { order: Order }) {
     <div className="min-h-dvh p-6 sm:p-10">
       <div className="mx-auto max-w-3xl">
         <OrderStatus order={orderState.order} />
+        <PushSubscription />
         <OrderProgress progress={orderState.progress} />
         {loading && <div className="text-sm text-zinc-400">Updating...</div>}
       </div>
