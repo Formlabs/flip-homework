@@ -37,6 +37,9 @@ export default function OrderContainer({ order }: { order: Order }) {
   }
 
   useEffect(() => {
+    if (isComplete(orderState)) {
+      return;
+    }
     intervalId.current = setInterval(
       () => refresh(),
       1000
