@@ -23,6 +23,7 @@ class Order(models.Model):
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="unknown")
     items = models.JSONField(default=list, blank=True)
     assigned_printer_id = models.IntegerField(null=True, blank=True)
+    progress = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
