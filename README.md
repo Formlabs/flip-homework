@@ -1,13 +1,11 @@
-# **HOMEWORK ASSIGNMENT**
+# **ASSIGNMENT**
 
 ## Submission guidelines
 You are allowed to modify the main branch or add new branches, for easier evaluation, please don't modify the initial commits.
 
 ## 🎯 **Tasks**
 
-This homework includes **6 optional tasks** of varying complexity to showcase different skills. You can choose to complete **one, multiple, or all** tasks based on your interests and time availability.
-
-> **📝 Important:** We don't evaluate candidates based on the number of tasks completed. Each task is **completely optional**, but completing multiple tasks provides more evaluation opportunities across different skill areas.
+This assignment includes **6 optional tasks** of varying complexity to showcase different skills. 
 
 ### 📋 **Task Selection Strategy**
 
