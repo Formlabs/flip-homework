@@ -1,4 +1,19 @@
-type OrderStatus = { id: number; status: string };
+import StlViewer from "@/components/StlViewer";
+import { resolveColor } from "@/lib/colors";
+
+type OrderItem = {
+  printable_id: number;
+  qty: number;
+  color?: string;
+  name?: string | null;
+  stl_url?: string | null;
+};
+type OrderStatus = {
+  id: number;
+  status: string;
+  assigned_printer_id?: number | null;
+  items?: OrderItem[];
+};
 
 async function getStatus(id: string): Promise<OrderStatus | { error: string }> {
   try {
@@ -44,6 +59,25 @@ export default async function OrderPage({
               {data.status}
             </span>
           </div>
+          {data.items && data.items.length > 0 ? (
+            <div className="mt-6 grid gap-4">
+              {data.items.map((item, idx) => (
+                <div key={idx} className="rounded overflow-hidden">
+                  {item.stl_url ? (
+                    <StlViewer
+                      url={item.stl_url}
+                      color={resolveColor(item.color)}
+                      height={320}
+                    />
+                  ) : null}
+                  <p className="text-xs text-zinc-400 mt-1">
+                    {item.name ?? `Printable ${item.printable_id}`} ·{" "}
+                    {item.color || "—"} · ×{item.qty}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-4 text-xs text-zinc-400">
             You can safely close this page. Refresh to update status.
           </div>

@@ -7,13 +7,18 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 type Props = {
   url: string;
+  color?: string;
   className?: string;
   height?: number;
 };
 
-export default function StlViewer({ url, className, height = 360 }: Props) {
+const FALLBACK_COLOR = "#cbd5e1";
+
+export default function StlViewer({ url, color, className, height = 360 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const materialRef = useRef<THREE.MeshPhongMaterial | null>(null);
+  const colorRef = useRef<string>(color || FALLBACK_COLOR);
 
   useEffect(() => {
     const container = containerRef.current!;
@@ -45,7 +50,10 @@ export default function StlViewer({ url, className, height = 360 }: Props) {
       (geometry: THREE.BufferGeometry) => {
         geometry.computeBoundingBox();
         geometry.computeVertexNormals();
-        const material = new THREE.MeshPhongMaterial();
+        const material = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(colorRef.current),
+        });
+        materialRef.current = material;
         mesh = new THREE.Mesh(geometry, material);
 
         // Center & scale to fit view
@@ -93,10 +101,19 @@ export default function StlViewer({ url, className, height = 360 }: Props) {
         mesh.geometry.dispose();
         (mesh.material as THREE.Material).dispose();
       }
+      materialRef.current = null;
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
   }, [url, height]);
+
+  // Re-tint in place when the color changes — no scene rebuild, no STL reload.
+  useEffect(() => {
+    colorRef.current = color || FALLBACK_COLOR;
+    if (materialRef.current) {
+      materialRef.current.color.set(colorRef.current);
+    }
+  }, [color]);
 
   return <div ref={containerRef} className={className} style={{ height }} />;
 }

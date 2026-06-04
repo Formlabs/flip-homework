@@ -147,6 +147,79 @@ class ApiEndpointsTests(TestCase):
         resp = self.client.get("/api/orders/999")
         self.assertEqual(resp.status_code, 404)
 
+    def test_create_order_stores_chosen_color(self):
+        p = self._make_printable(name="A", color="red")
+        resp = self._post_json(
+            "/api/orders",
+            {"items": [{"printable_id": p.id, "qty": 1, "color": "green"}]},
+        )
+        self.assertEqual(resp.status_code, 201)
+        oid = resp.json()["order_id"]
+        o = Order.objects.get(pk=oid)
+        self.assertEqual(o.items[0]["color"], "green")
+
+    def test_create_order_defaults_color_to_printable(self):
+        p = self._make_printable(name="A", color="blue")
+        resp = self._post_json(
+            "/api/orders",
+            {"items": [{"printable_id": p.id, "qty": 1}]},
+        )
+        self.assertEqual(resp.status_code, 201)
+        oid = resp.json()["order_id"]
+        o = Order.objects.get(pk=oid)
+        self.assertEqual(o.items[0]["color"], "blue")
+
+    def test_create_order_rejects_invalid_color(self):
+        p = self._make_printable(name="A", color="red")
+        resp = self._post_json(
+            "/api/orders",
+            {"items": [{"printable_id": p.id, "qty": 1, "color": "chartreuse"}]},
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"]["code"], "BAD_REQUEST")
+
+    def test_order_status_returns_enriched_items(self):
+        p = self._make_printable(name="Red Cube", color="red", with_stl=True)
+        resp = self._post_json(
+            "/api/orders",
+            {"items": [{"printable_id": p.id, "qty": 2, "color": "purple"}]},
+        )
+        oid = resp.json()["order_id"]
+        resp = self.client.get(f"/api/orders/{oid}")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        # Existing fields preserved (a future Frontend-001 poller depends on these)
+        self.assertEqual(data["id"], oid)
+        self.assertEqual(data["status"], "queued")
+        # New enriched items
+        self.assertIn("items", data)
+        self.assertEqual(len(data["items"]), 1)
+        item = data["items"][0]
+        self.assertEqual(item["printable_id"], p.id)
+        self.assertEqual(item["qty"], 2)
+        self.assertEqual(item["color"], "purple")
+        self.assertEqual(item["name"], "Red Cube")
+        self.assertTrue(item["stl_url"])
+
+    def test_order_status_legacy_item_without_color_defaults_to_printable(self):
+        # Orders created before the color feature have items with no "color" key;
+        # order_status must fall back to the printable's stored color on read.
+        p = self._make_printable(name="Blue Cube", color="blue", with_stl=True)
+        o = Order.objects.create(
+            status="queued", items=[{"printable_id": p.id, "qty": 1}]
+        )
+        resp = self.client.get(f"/api/orders/{o.id}")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["items"][0]["color"], "blue")
+
+        # When the printable itself has no stored color, it falls back to "".
+        p2 = self._make_printable(name="Colorless", color="")
+        o2 = Order.objects.create(
+            status="queued", items=[{"printable_id": p2.id, "qty": 1}]
+        )
+        resp = self.client.get(f"/api/orders/{o2.id}")
+        self.assertEqual(resp.json()["items"][0]["color"], "")
+
     # Printer flow
     def test_printer_ping_assigns_job_and_job_complete(self):
         # Prepare queued order

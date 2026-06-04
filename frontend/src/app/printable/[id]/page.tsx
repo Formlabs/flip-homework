@@ -1,5 +1,5 @@
 import Link from "next/link";
-import StlViewer from "@/components/StlViewer";
+import PrintablePanel from "@/components/PrintablePanel";
 
 type Printable = {
   id: number;
@@ -50,39 +50,11 @@ export default async function PrintablePreview({
           <h1 className="text-2xl font-semibold mb-1 title-gradient">
             {p.name}
           </h1>
-          {p.stl_url ? (
-            <div className="mt-4 rounded overflow-hidden">
-              <StlViewer url={p.stl_url} height={420} />
-            </div>
-          ) : null}
-          <div className="mt-5 flex items-center justify-between">
-            <div>
-              {p.color ? (
-                <p className="text-xs text-zinc-400 mt-0.5">Color: {p.color}</p>
-              ) : null}
-            </div>
-            <form
-              action="/api/orders"
-              method="post"
-              className="flex items-center gap-3"
-            >
-              <label className="text-sm" htmlFor="qty">
-                Qty
-              </label>
-              <input
-                id="qty"
-                name="qty"
-                type="number"
-                min={1}
-                defaultValue={1}
-                className="border border-zinc-700/60 rounded px-2 py-1 w-20 bg-transparent text-zinc-100"
-              />
-              <input type="hidden" name="printable_id" value={p.id} />
-              <button type="submit" className="btn-neon">
-                Order
-              </button>
-            </form>
-          </div>
+          <PrintablePanel
+            printableId={p.id}
+            stlUrl={p.stl_url}
+            initialColor={p.color}
+          />
         </div>
       </div>
     </div>
