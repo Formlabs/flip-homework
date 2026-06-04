@@ -6,6 +6,13 @@ from django.utils import timezone
 from django.db import transaction
 
 
+# Palette a shopper may pick for an order item. Mirrored on the frontend in
+# `frontend/src/lib/colors.ts` (which maps each name to a render hex).
+ALLOWED_COLORS = {
+    "red", "green", "blue", "orange", "purple", "black", "white", "gray",
+}
+
+
 def not_implemented(message: str):
     return JsonResponse(
         {"error": {"code": "NOT_IMPLEMENTED", "message": message}}, status=501
@@ -100,8 +107,10 @@ def create_order(request):
                 {"error": {"code": "BAD_REQUEST", "message": "qty must be > 0"}},
                 status=400,
             )
-        # Ensure printable exists
-        if not Printable.objects.filter(id=pid).exists():
+        # Ensure printable exists (and fetch it for its default color)
+        try:
+            printable = Printable.objects.get(id=pid)
+        except Printable.DoesNotExist:
             return JsonResponse(
                 {
                     "error": {
@@ -111,7 +120,17 @@ def create_order(request):
                 },
                 status=400,
             )
-        cleaned.append({"printable_id": pid, "qty": qty})
+        # Per-item color: an explicit choice must be in the palette; otherwise
+        # fall back to the printable's own stored color.
+        color = it.get("color")
+        if color is not None and color not in ALLOWED_COLORS:
+            return JsonResponse(
+                {"error": {"code": "BAD_REQUEST", "message": "invalid color"}},
+                status=400,
+            )
+        if not color:
+            color = printable.color
+        cleaned.append({"printable_id": pid, "qty": qty, "color": color})
 
     order = Order.objects.create(status="queued", items=cleaned)
     return JsonResponse({"order_id": order.id, "status": order.status}, status=201)
@@ -122,15 +141,39 @@ def order_status(request, order_id: int):
         return HttpResponseNotAllowed(["GET"])
     try:
         o = Order.objects.get(pk=order_id)
-        return JsonResponse(
-            {
-                "id": o.id,
-                "status": o.status,
-                "assigned_printer_id": o.assigned_printer_id,
-            }
-        )
     except Order.DoesNotExist:
         return JsonResponse({"error": {"code": "NOT_FOUND"}}, status=404)
+
+    items = []
+    for it in o.items or []:
+        pid = it.get("printable_id")
+        try:
+            p = Printable.objects.get(id=pid)
+        except Printable.DoesNotExist:
+            p = None
+        items.append(
+            {
+                "printable_id": pid,
+                "qty": it.get("qty", 1),
+                # Legacy items (pre-color) fall back to the printable's stored color.
+                "color": it.get("color") or (p.color if p else ""),
+                "name": p.name if p else None,
+                "stl_url": (
+                    request.build_absolute_uri(f"/api/printables/{pid}/stl")
+                    if p and p.stl
+                    else None
+                ),
+            }
+        )
+
+    return JsonResponse(
+        {
+            "id": o.id,
+            "status": o.status,
+            "assigned_printer_id": o.assigned_printer_id,
+            "items": items,
+        }
+    )
 
 
 @csrf_exempt
